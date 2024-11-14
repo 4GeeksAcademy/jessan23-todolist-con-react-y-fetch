@@ -1,35 +1,55 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 const Tareas = () => {
-  const [tareas, setTareas] = useState([]) ;
+  const [tareas, setTareas] = useState([]);
+  const [tarea, setTarea] = useState("");
 
-  
-  function obtenerTareas() {
-    return fetch('https://playground.4geeks.com/todo/todos/Jessica', {
+  const agregarTarea = () => {
+    if (tarea.trim() !== "") {
+      const nuevaTarea = { label: tarea, done: false };
+      fetch('https://playground.4geeks.com/todo/users/jessicaanai', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(nuevaTarea)
+      })
+      .then(response => response.json())
+      .then(() => {
+        setTareas([...tareas, nuevaTarea]);
+        setTarea("");
+      })
+      .catch(error => console.log('Error:', error));
+    }
+  };
+
+  const obtenerTareas = () => {
+    return fetch('https://playground.4geeks.com/todo/users/jessicaanai', {
       method: 'GET'
     })
       .then(response => response.json())
-      .then((data) => {
-        console.log(data.results); 
-        setTareas(data.results); 
+      .then(data => {
+        setTareas(data.todos);
       })
-      .catch((error) => console.log('Error:', error));
-  }
+      .catch(error => console.log('Error:', error));
+  };
 
-  
-  function eliminarTarea(index) {
+  const eliminarTarea = (index) => {
     const nuevasTareas = tareas.filter((_, i) => i !== index);
     setTareas(nuevasTareas);
-  }
-
-  
-  useEffect(() => {
-    obtenerTareas();
-  }, []); 
+  };
 
   return (
     <div className="text-center">
       <h1>Tareas</h1>
+      <input 
+        type="text"
+        value={tarea}
+        onChange={(e) => setTarea(e.target.value)}
+        placeholder="Agregar tarea"
+      />
+      <button onClick={agregarTarea}>Agregar Tarea</button>
+      <button onClick={obtenerTareas}>Obtener Tareas</button>
       <ol>
         {Array.isArray(tareas) && tareas.length > 0 ? (
           tareas.map((item, index) => (
@@ -45,7 +65,7 @@ const Tareas = () => {
                 transition: "background-color 0.3s ease",
               }}
             >
-              <span>{item.todo.todos}</span>
+              <span>{item.label}</span>
               <button
                 className="btn btn-danger btn-sm"
                 onClick={() => eliminarTarea(index)}
