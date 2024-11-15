@@ -1,43 +1,90 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const Tareas = () => {
+  const apiUrl="https://playground.4geeks.com/todo"
   const [tareas, setTareas] = useState([]);
   const [tarea, setTarea] = useState("");
 
   const agregarTarea = () => {
     if (tarea.trim() !== "") {
       const nuevaTarea = { label: tarea, done: false };
-      fetch('https://playground.4geeks.com/todo/users/jessicaanai', {
+      fetch(apiUrl+'/todos/jessicaanai', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(nuevaTarea)
       })
-      .then(response => response.json())
-      .then(() => {
-        setTareas([...tareas, nuevaTarea]);
-        setTarea("");
+      .then(response => {
+        if(response.ok){
+          return response.json()
+        }
+      })
+      .then((data) => {
+        if(data){
+
+          setTareas([...tareas, data]);
+          setTarea("");
+        }
       })
       .catch(error => console.log('Error:', error));
     }
   };
+  const crearUsuario = () => {
+    fetch(apiUrl+'/users/jessicaanai', {
+     method: 'POST'
+   })
+     .then(response => response.json())
+     .then(data => {
+       console.log(data);
+     })
+     .catch(error => console.log('Error:', error));
+ };
+
+
 
   const obtenerTareas = () => {
-    return fetch('https://playground.4geeks.com/todo/users/jessicaanai', {
+     fetch(apiUrl+'/users/jessicaanai', {
       method: 'GET'
     })
-      .then(response => response.json())
+      .then(response => {
+        if (response.status==404){
+          crearUsuario()
+        }
+        if(response.ok){
+          return response.json()
+        }
+      })
       .then(data => {
-        setTareas(data.todos);
+        if (data){
+       setTareas(data.todos);
+        }
       })
       .catch(error => console.log('Error:', error));
   };
 
-  const eliminarTarea = (index) => {
-    const nuevasTareas = tareas.filter((_, i) => i !== index);
-    setTareas(nuevasTareas);
+  const eliminarTarea = (id) => {
+    fetch(apiUrl+'/todos/'+id, {
+      method: 'DELETE'
+    })
+      .then(response => {
+        if(response.ok){
+          return response
+        }
+      })
+      .then(data => {
+        if(data){
+          const nuevasTareas = tareas.filter(item => item.id !== id);
+          setTareas(nuevasTareas);
+        }
+      })
+      .catch(error => console.log('Error:', error));
+    
   };
+
+  useEffect(()=>{
+    obtenerTareas()
+  },[])
 
   return (
     <div className="text-center">
@@ -49,7 +96,6 @@ const Tareas = () => {
         placeholder="Agregar tarea"
       />
       <button onClick={agregarTarea}>Agregar Tarea</button>
-      <button onClick={obtenerTareas}>Obtener Tareas</button>
       <ol>
         {Array.isArray(tareas) && tareas.length > 0 ? (
           tareas.map((item, index) => (
@@ -68,7 +114,7 @@ const Tareas = () => {
               <span>{item.label}</span>
               <button
                 className="btn btn-danger btn-sm"
-                onClick={() => eliminarTarea(index)}
+                onClick={() => eliminarTarea(item.id)}
                 style={{
                   borderRadius: "50%",
                   width: "30px",
@@ -84,6 +130,7 @@ const Tareas = () => {
           <li>No hay tareas disponibles.</li>
         )}
       </ol>
+      Quedan {tareas.length} tareas
     </div>
   );
 };
